@@ -1,16 +1,21 @@
 <script lang="ts">
-	import type { LayoutData } from "./$types";
+	import "@fontsource-variable/roboto-slab";
 	import { SITE_NAME } from "$lib/constants";
-
-	export let data: LayoutData;
+	import { Link } from "$lib/components";
 </script>
 
 <svelte:head>
 	<title>{SITE_NAME}</title>
 </svelte:head>
 
-<h1>{SITE_NAME}</h1>
+<Link url="/">
+	<h1>{SITE_NAME}</h1>
+</Link>
 
 <slot />
 
-<footer>Page generated at {data.currentTime}.</footer>
+<style>
+	:global(body) {
+		font-family: "Roboto Slab Variable", sans-serif;
+	}
+</style>

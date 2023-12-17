@@ -225,6 +225,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource-variable/roboto-slab@npm:^5.0.18":
+  version: 5.0.18
+  resolution: "@fontsource-variable/roboto-slab@npm:5.0.18"
+  checksum: 829c799afc771cbe5d80562ec9b0cceaef8d3976911332a0f8a355355afdc9ad1ce23dba9ad601e19d62fdafb2e6a207d320e894aa31ad8f84552d75ea3e9c3b
+  languageName: node
+  linkType: hard
+
 "@humanwhocodes/config-array@npm:^0.11.13":
   version: 0.11.13
   resolution: "@humanwhocodes/config-array@npm:0.11.13"
@@ -901,6 +908,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "cavotesearch@workspace:."
   dependencies:
+    "@fontsource-variable/roboto-slab": "npm:^5.0.18"
     "@sveltejs/adapter-cloudflare": "npm:^3.0.0"
     "@sveltejs/kit": "npm:^2.0.0"
     "@sveltejs/vite-plugin-svelte": "npm:^3.0.1"
