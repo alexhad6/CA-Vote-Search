@@ -7,7 +7,7 @@ export default {
 	kit: {
 		adapter: adapter({
 			routes: {
-				exclude: ["/*"],
+				include: ["/search"],
 			},
 		}),
 	},
