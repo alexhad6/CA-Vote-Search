@@ -1,6 +1,7 @@
 """Function used to download files."""
 
 from typing import Any
+import sys
 import ssl
 import requests
 from requests.adapters import HTTPAdapter
@@ -8,6 +9,10 @@ import urllib3
 from urllib3.util import create_urllib3_context
 from remotezip import RemoteZip  # type: ignore
 from load_data._paths import BASE_URL, DOWNLOAD_DIR, DataFileName
+
+if sys.version_info < (3, 12):
+    # Backport for Python 3.11
+    ssl.OP_LEGACY_SERVER_CONNECT = 0x4
 
 
 class _CustomSslContextHttpAdapter(HTTPAdapter):
@@ -23,7 +28,7 @@ class _CustomSslContextHttpAdapter(HTTPAdapter):
     ) -> None:
         ctx = create_urllib3_context()
         ctx.load_default_certs()
-        ctx.options |= ssl.OP_LEGACY_SERVER_CONNECT  # pylint: disable=no-member
+        ctx.options |= ssl.OP_LEGACY_SERVER_CONNECT
         self.poolmanager = urllib3.PoolManager(ssl_context=ctx)
 
 
