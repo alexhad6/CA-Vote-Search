@@ -1,0 +1,31 @@
+[build-system]
+requires = ["poetry-core>=1.8.1"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "cavotesearch"
+version = "0.1.0"
+description = "Scripts to download data for CAVoteSearch."
+authors = ["Alex Hadley <contact@alexhadley.net>"]
+license = "BSD-3-Clause"
+readme = "README.md"
+packages = [{ include = "load_data" }]
+
+[tool.poetry.scripts]
+load-data = "load_data._cli:main"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.31.0"
+urllib3 = "^2.1.0"
+remotezip = "^0.12.2"
+
+[tool.poetry.group.dev.dependencies]
+types-requests = "^2.31.0.10"
+mypy = "^1.8.0"
+flake8 = "^6.1.0"
+pylint = "^3.0.3"
+black = "^23.12.0"
+
+[tool.mypy]
+strict = true

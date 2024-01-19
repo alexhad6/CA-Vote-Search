@@ -1,6 +1,6 @@
 <script lang="ts">
 	import "@fontsource-variable/roboto-slab";
-	import { SITE_NAME } from "$lib/constants";
+	import { SITE_NAME, CA_LEGISLATURE_URL } from "$lib/constants";
 	import { Link } from "$lib/components";
 </script>
 
@@ -13,6 +13,14 @@
 </Link>
 
 <slot />
+
+<footer>
+	<p>
+		The data used in this app is downloaded from
+		<Link url={CA_LEGISLATURE_URL} new_page />.
+	</p>
+	<p></p>
+</footer>
 
 <style>
 	:global(body) {

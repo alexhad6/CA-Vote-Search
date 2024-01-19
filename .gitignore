@@ -10,3 +10,10 @@ node_modules/
 
 # Svelte
 .svelte-kit/
+
+# Python
+__pycache__/
+.mypy_cache/
+
+# Downloaded data
+data/
