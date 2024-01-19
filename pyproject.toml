@@ -15,7 +15,7 @@ packages = [{ include = "load_data" }]
 load-data = "load_data._cli:main"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 requests = "^2.31.0"
 urllib3 = "^2.1.0"
 remotezip = "^0.12.2"
