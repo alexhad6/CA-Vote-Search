@@ -15,8 +15,6 @@ export default function searchOptions<T extends Option>(input: string, options: 
 		}
 	});
 
-	console.log(results.sort(({ score: s1 }, { score: s2 }) => s2 - s1));
-
 	return results
 		.sort(({ score: s1 }, { score: s2 }) => s2 - s1)
 		.map(({ option }) => option);

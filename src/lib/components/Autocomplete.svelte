@@ -18,7 +18,7 @@
 	let filterOptions = false;
 	let selectedIndex = 0;
 	let focusedIndex = selectedIndex;
-	let scrollToIndex = selectedIndex;
+	let scrollToIndex: number | null = selectedIndex;
 	let input = options[selectedIndex].label;
 	let inputElement: HTMLInputElement;
 	let listboxElement: HTMLDivElement;
@@ -63,11 +63,15 @@
 		: ""}
 	bind:this={inputElement}
 	bind:value={input}
-	on:focus={({ currentTarget }) => {
+	on:focus={async ({ currentTarget }) => {
 		filterOptions = false;
+		await tick();
 		focusedIndex = selectedIndex;
 		currentTarget.select();
+		console.log("Assigning scrollToIndex");
 		scrollToIndex = selectedIndex;
+		await tick();
+		scrollToIndex = null;
 	}}
 	on:blur={({ relatedTarget }) => {
 		if (
@@ -80,10 +84,12 @@
 			resetInput(selectedIndex);
 		}
 	}}
-	on:input={() => {
+	on:input={async () => {
 		filterOptions = true;
 		focusedIndex = 0;
 		scrollToIndex = focusedIndex;
+		await tick();
+		scrollToIndex = null;
 	}}
 	on:keydown={async (event) => {
 		const { key } = event;
@@ -91,9 +97,13 @@
 			if (key === "ArrowUp") {
 				focusedIndex = Math.max(0, focusedIndex - 1);
 				scrollToIndex = focusedIndex;
+				await tick();
+				scrollToIndex = null;
 			} else if (key === "ArrowDown") {
 				focusedIndex = Math.min(filteredOptions.length - 1, focusedIndex + 1);
 				scrollToIndex = focusedIndex;
+				await tick();
+				scrollToIndex = null;
 			} else if (key === "Enter") {
 				selectedIndex = filteredOptions[focusedIndex].index;
 				filterOptions = false;
@@ -102,6 +112,8 @@
 				await tick();
 				inputElement.select();
 				scrollToIndex = selectedIndex;
+				await tick();
+				scrollToIndex = null;
 			} else {
 				return;
 			}
@@ -123,7 +135,7 @@
 			height={listHeight}
 			itemCount={filteredOptions.length * 2 - 1}
 			itemSize={itemHeights}
-			scrollToIndex={scrollToIndex * 2}
+			scrollToIndex={scrollToIndex === null ? undefined : scrollToIndex * 2}
 			scrollToAlignment="auto"
 		>
 			<svelte:fragment slot="item" let:index={filteredIndex} let:style>
