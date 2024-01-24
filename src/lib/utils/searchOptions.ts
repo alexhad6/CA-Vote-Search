@@ -7,12 +7,15 @@ import type { Option } from "$lib/types";
  */
 export default function searchOptions<T extends Option>(input: string, options: T[]) {
 	const results: { option: T; score: number }[] = [];
+
 	options.forEach((option) => {
 		const result = fuzzysort.single(input, option.label);
 		if (result !== null) {
 			results.push({ option, score: result.score });
 		}
 	});
+
+	console.log(results.sort(({ score: s1 }, { score: s2 }) => s2 - s1));
 
 	return results
 		.sort(({ score: s1 }, { score: s2 }) => s2 - s1)

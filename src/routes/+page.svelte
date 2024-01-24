@@ -18,10 +18,12 @@
 		}),
 	);
 
-	const billOptions: Option[] = Object.entries(bills).map(([billId, { measure }]) => ({
-		value: billId,
-		label: measure,
-	}));
+	const billOptions: Option[] = Object.entries(bills).map(
+		([billId, { measure, subject }]) => ({
+			value: billId,
+			label: measure + (subject !== null ? `: ${subject}` : ""),
+		}),
+	);
 </script>
 
 <p>

@@ -1,5 +1,12 @@
+<script context="module" lang="ts">
+	const ITEM_HEIGHT = 40;
+	const ITEM_GAP = 4;
+	const MAX_ITEMS_IN_VIEW = 5;
+</script>
+
 <script lang="ts">
 	import { tick } from "svelte";
+	import VirtualList from "svelte-tiny-virtual-list";
 	import type { Option } from "$lib/types";
 	import { searchOptions } from "$lib/utils";
 
@@ -9,11 +16,12 @@
 	export let options: Option[];
 
 	let filterOptions = false;
-	let focusedIndex = 0;
 	let selectedIndex = 0;
+	let focusedIndex = selectedIndex;
+	let scrollToIndex = selectedIndex;
 	let input = options[selectedIndex].label;
 	let inputElement: HTMLInputElement;
-	let listElement: HTMLUListElement;
+	let listboxElement: HTMLDivElement;
 
 	$: listboxId = `${id}-listbox`;
 	$: optionsWithIndices = options.map((option, index) => ({ index, ...option }));
@@ -21,6 +29,12 @@
 		filterOptions && input.length > 0
 			? searchOptions(input, optionsWithIndices)
 			: optionsWithIndices;
+	$: listHeight =
+		(ITEM_HEIGHT + ITEM_GAP) * Math.min(MAX_ITEMS_IN_VIEW, filteredOptions.length) -
+		ITEM_GAP;
+	$: itemHeights = Array.apply(null, new Array(options.length * 2 - 1)).map((_, index) =>
+		index % 2 === 0 ? ITEM_HEIGHT : ITEM_GAP,
+	);
 
 	$: optionId = (index: number) => `${id}-${index}`;
 
@@ -32,16 +46,6 @@
 
 	$: resetInput = (index: number) => {
 		input = options[index].label;
-	};
-
-	$: scrollOptionIntoView = (filteredIndex: number) => {
-		if (filteredIndex < filteredOptions.length) {
-			const { index } = filteredOptions[filteredIndex];
-			const optionElement = document.getElementById(optionId(index));
-			if (optionElement !== null) {
-				optionElement.scrollIntoView({ block: "nearest" });
-			}
-		}
 	};
 </script>
 
@@ -63,11 +67,15 @@
 		filterOptions = false;
 		focusedIndex = selectedIndex;
 		currentTarget.select();
-		scrollOptionIntoView(selectedIndex);
+		scrollToIndex = selectedIndex;
 	}}
 	on:blur={({ relatedTarget }) => {
 		if (
-			!(relatedTarget instanceof HTMLLIElement && listElement.contains(relatedTarget))
+			!(
+				relatedTarget instanceof Element &&
+				relatedTarget.role === "option" &&
+				listboxElement.contains(relatedTarget)
+			)
 		) {
 			resetInput(selectedIndex);
 		}
@@ -75,17 +83,17 @@
 	on:input={() => {
 		filterOptions = true;
 		focusedIndex = 0;
-		scrollOptionIntoView(focusedIndex);
+		scrollToIndex = focusedIndex;
 	}}
 	on:keydown={async (event) => {
 		const { key } = event;
 		if (focusedIndex !== null) {
 			if (key === "ArrowUp") {
 				focusedIndex = Math.max(0, focusedIndex - 1);
-				scrollOptionIntoView(focusedIndex);
+				scrollToIndex = focusedIndex;
 			} else if (key === "ArrowDown") {
 				focusedIndex = Math.min(filteredOptions.length - 1, focusedIndex + 1);
-				scrollOptionIntoView(focusedIndex);
+				scrollToIndex = focusedIndex;
 			} else if (key === "Enter") {
 				selectedIndex = filteredOptions[focusedIndex].index;
 				filterOptions = false;
@@ -93,7 +101,7 @@
 				focusedIndex = selectedIndex;
 				await tick();
 				inputElement.select();
-				scrollOptionIntoView(selectedIndex);
+				scrollToIndex = selectedIndex;
 			} else {
 				return;
 			}
@@ -102,32 +110,53 @@
 	}}
 />
 
-<ul
+<div
 	id={listboxId}
-	class="card list max-h-48 w-full overflow-y-auto p-4"
+	class="card w-full [&>div]:my-4 [&>div]:px-4"
 	role="listbox"
 	aria-label="{label} Options"
-	bind:this={listElement}
+	bind:this={listboxElement}
 >
-	{#each filteredOptions as { index, value, label }, filteredIndex (value)}
-		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<li
-			id={optionId(index)}
-			role="option"
-			aria-selected={selectedIndex === index}
-			class="cursor-pointer px-4 py-2 {optionClasses(index, filteredIndex)}"
-			tabindex="-1"
-			on:mousemove={() => (focusedIndex = filteredIndex)}
-			on:click={async () => {
-				selectedIndex = index;
-				resetInput(selectedIndex);
-				filterOptions = false;
-				await tick();
-				inputElement.focus();
-			}}
+	{#if filteredOptions.length > 0}
+		<VirtualList
+			width="100%"
+			height={listHeight}
+			itemCount={filteredOptions.length * 2 - 1}
+			itemSize={itemHeights}
+			scrollToIndex={scrollToIndex * 2}
+			scrollToAlignment="auto"
 		>
-			{label}
-		</li>
-	{/each}
-</ul>
+			<svelte:fragment slot="item" let:index={filteredIndex} let:style>
+				{#if filteredIndex % 2 == 0}
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<div
+						id={optionId(filteredOptions[filteredIndex / 2].index)}
+						role="option"
+						aria-selected={selectedIndex === filteredOptions[filteredIndex / 2].index}
+						class={"cursor-pointer truncate px-4 py-2 rounded-token " +
+							optionClasses(filteredOptions[filteredIndex / 2].index, filteredIndex / 2)}
+						title={filteredOptions[filteredIndex / 2].label}
+						tabindex="-1"
+						{style}
+						on:mousemove={() => (focusedIndex = filteredIndex / 2)}
+						on:click={async () => {
+							selectedIndex = filteredOptions[filteredIndex / 2].index;
+							resetInput(selectedIndex);
+							filterOptions = false;
+							await tick();
+							inputElement.focus();
+						}}
+					>
+						{filteredOptions[filteredIndex / 2].label}
+					</div>
+				{/if}
+			</svelte:fragment>
+		</VirtualList>
+	{:else}
+		<div style="height:{listHeight}px;">
+			<div class="px-4 py-2">No results found</div>
+		</div>
+	{/if}
+</div>
+
 <input hidden {name} value={options[selectedIndex].value} />
