@@ -18,7 +18,7 @@
 	let filterOptions = false;
 	let selectedIndex = 0;
 	let focusedIndex = selectedIndex;
-	let scrollToIndex: number | null = selectedIndex;
+	let scrollToIndex: number | null = null;
 	let input = options[selectedIndex].label;
 	let inputElement: HTMLInputElement;
 	let listboxElement: HTMLDivElement;
