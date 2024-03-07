@@ -1,8 +1,19 @@
 <script lang="ts">
-	import { AppShell, AppBar, LightSwitch } from "@skeletonlabs/skeleton";
+	import {
+		computePosition,
+		autoUpdate,
+		offset,
+		shift,
+		flip,
+		arrow,
+	} from "@floating-ui/dom";
+	import { storePopup, AppShell, AppBar, LightSwitch } from "@skeletonlabs/skeleton";
 	import { Icon } from "$lib/components";
 	import "@fontsource-variable/inter";
 	import "../app.postcss";
+
+	// Set up for Skeleton popups
+	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 </script>
 
 <svelte:head>

@@ -5,7 +5,9 @@
 </script>
 
 <script lang="ts">
+	import type { PopupSettings } from "@skeletonlabs/skeleton";
 	import { tick } from "svelte";
+	import { popup } from "@skeletonlabs/skeleton";
 	import VirtualList from "svelte-tiny-virtual-list";
 	import type { Option } from "$lib/types";
 	import { searchOptions } from "$lib/utils";
@@ -15,15 +17,25 @@
 	export let label: string;
 	export let options: Option[];
 
+	let popupExpanded = false;
 	let filterOptions = false;
 	let selectedIndex = 0;
 	let focusedIndex = selectedIndex;
 	let scrollToIndex: number | null = null;
 	let input = options[selectedIndex].label;
+	let inputWidth: number;
 	let inputElement: HTMLInputElement;
 	let listboxElement: HTMLDivElement;
 
 	$: listboxId = `${id}-listbox`;
+	$: popupTarget = `${id}-popup`;
+	$: popupSettings = {
+		event: "focus-blur",
+		target: popupTarget,
+		placement: "bottom",
+		state: ({ state }) => (popupExpanded = state),
+	} satisfies PopupSettings;
+
 	$: optionsWithIndices = options.map((option, index) => ({ index, ...option }));
 	$: filteredOptions =
 		filterOptions && input.length > 0
@@ -49,84 +61,88 @@
 	};
 </script>
 
-<label class="label" for={id}>{label}</label>
-<input
-	{id}
-	type="text"
-	class="input form-select"
-	role="combobox"
-	aria-autocomplete="list"
-	aria-controls={listboxId}
-	aria-expanded="true"
-	aria-activedescendant={focusedIndex < filteredOptions.length
-		? optionId(filteredOptions[focusedIndex].index)
-		: ""}
-	bind:this={inputElement}
-	bind:value={input}
-	on:focus={async ({ currentTarget }) => {
-		filterOptions = false;
-		await tick();
-		focusedIndex = selectedIndex;
-		currentTarget.select();
-		console.log("Assigning scrollToIndex");
-		scrollToIndex = selectedIndex;
-		await tick();
-		scrollToIndex = null;
-	}}
-	on:blur={({ relatedTarget }) => {
-		if (
-			!(
-				relatedTarget instanceof Element &&
-				relatedTarget.role === "option" &&
-				listboxElement.contains(relatedTarget)
-			)
-		) {
-			resetInput(selectedIndex);
-		}
-	}}
-	on:input={async () => {
-		filterOptions = true;
-		focusedIndex = 0;
-		scrollToIndex = focusedIndex;
-		await tick();
-		scrollToIndex = null;
-	}}
-	on:keydown={async (event) => {
-		const { key } = event;
-		if (focusedIndex !== null) {
-			if (key === "ArrowUp") {
-				focusedIndex = Math.max(0, focusedIndex - 1);
-				scrollToIndex = focusedIndex;
-				await tick();
-				scrollToIndex = null;
-			} else if (key === "ArrowDown") {
-				focusedIndex = Math.min(filteredOptions.length - 1, focusedIndex + 1);
-				scrollToIndex = focusedIndex;
-				await tick();
-				scrollToIndex = null;
-			} else if (key === "Enter") {
-				selectedIndex = filteredOptions[focusedIndex].index;
-				filterOptions = false;
+<div class="w-full" bind:clientWidth={inputWidth}>
+	<label class="label" for={id}>{label}</label>
+	<input
+		{id}
+		type="text"
+		class="input form-select"
+		role="combobox"
+		aria-autocomplete="list"
+		aria-controls={listboxId}
+		aria-expanded={popupExpanded ? "true" : "false"}
+		aria-activedescendant={focusedIndex < filteredOptions.length
+			? optionId(filteredOptions[focusedIndex].index)
+			: ""}
+		use:popup={popupSettings}
+		bind:this={inputElement}
+		bind:value={input}
+		on:focus={async ({ currentTarget }) => {
+			filterOptions = false;
+			await tick();
+			focusedIndex = selectedIndex;
+			currentTarget.select();
+			scrollToIndex = selectedIndex;
+			await tick();
+			scrollToIndex = null;
+		}}
+		on:blur={({ relatedTarget }) => {
+			if (
+				!(
+					relatedTarget instanceof Element &&
+					relatedTarget.role === "option" &&
+					listboxElement.contains(relatedTarget)
+				)
+			) {
 				resetInput(selectedIndex);
-				focusedIndex = selectedIndex;
-				await tick();
-				inputElement.select();
-				scrollToIndex = selectedIndex;
-				await tick();
-				scrollToIndex = null;
-			} else {
-				return;
 			}
-			event.preventDefault();
-		}
-	}}
-/>
+		}}
+		on:input={async () => {
+			filterOptions = true;
+			focusedIndex = 0;
+			scrollToIndex = focusedIndex;
+			await tick();
+			scrollToIndex = null;
+		}}
+		on:keydown={async (event) => {
+			const { key } = event;
+			if (focusedIndex !== null) {
+				if (key === "ArrowUp") {
+					focusedIndex = Math.max(0, focusedIndex - 1);
+					scrollToIndex = focusedIndex;
+					await tick();
+					scrollToIndex = null;
+				} else if (key === "ArrowDown") {
+					focusedIndex = Math.min(filteredOptions.length - 1, focusedIndex + 1);
+					scrollToIndex = focusedIndex;
+					await tick();
+					scrollToIndex = null;
+				} else if (key === "Enter") {
+					selectedIndex = filteredOptions[focusedIndex].index;
+					filterOptions = false;
+					resetInput(selectedIndex);
+					focusedIndex = selectedIndex;
+					await tick();
+					inputElement.select();
+					scrollToIndex = selectedIndex;
+					await tick();
+					scrollToIndex = null;
+				} else {
+					return;
+				}
+				event.preventDefault();
+			}
+		}}
+	/>
+</div>
 
 <div
 	id={listboxId}
-	class="card w-full [&>div]:my-4 [&>div]:px-4"
+	class="card z-10 duration-0 [&>div]:my-4 [&>div]:px-4"
+	style:width="{inputWidth}px"
 	role="listbox"
 	aria-label="{label} Options"
+	data-popup={popupTarget}
 	bind:this={listboxElement}
 >
 	{#if filteredOptions.length > 0}
