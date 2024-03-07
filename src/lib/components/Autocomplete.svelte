@@ -30,10 +30,9 @@
 	$: listboxId = `${id}-listbox`;
 	$: popupTarget = `${id}-popup`;
 	$: popupSettings = {
-		event: "focus-blur",
+		event: "focus-click",
 		target: popupTarget,
 		placement: "bottom",
-		state: ({ state }) => (popupExpanded = state),
 	} satisfies PopupSettings;
 
 	$: optionsWithIndices = options.map((option, index) => ({ index, ...option }));
@@ -77,60 +76,52 @@
 		use:popup={popupSettings}
 		bind:this={inputElement}
 		bind:value={input}
-		on:focus={async ({ currentTarget }) => {
+		on:focus={async () => {
+			input = "";
+			popupExpanded = true;
+			await tick();
 			filterOptions = false;
-			await tick();
 			focusedIndex = selectedIndex;
-			currentTarget.select();
 			scrollToIndex = selectedIndex;
-			await tick();
-			scrollToIndex = null;
 		}}
 		on:blur={({ relatedTarget }) => {
 			if (
 				!(
 					relatedTarget instanceof Element &&
-					relatedTarget.role === "option" &&
+					relatedTarget.getAttribute("role") === "option" &&
 					listboxElement.contains(relatedTarget)
 				)
 			) {
+				popupExpanded = false;
 				resetInput(selectedIndex);
+				scrollToIndex = null;
 			}
 		}}
-		on:input={async () => {
+		on:input={() => {
 			filterOptions = true;
 			focusedIndex = 0;
 			scrollToIndex = focusedIndex;
-			await tick();
-			scrollToIndex = null;
 		}}
-		on:keydown={async (event) => {
+		on:keydown={(event) => {
 			const { key } = event;
-			if (focusedIndex !== null) {
-				if (key === "ArrowUp") {
+			if (key === "ArrowUp") {
+				event.preventDefault();
+				if (filteredOptions.length > 0) {
 					focusedIndex = Math.max(0, focusedIndex - 1);
 					scrollToIndex = focusedIndex;
-					await tick();
-					scrollToIndex = null;
-				} else if (key === "ArrowDown") {
+				}
+			} else if (key === "ArrowDown") {
+				event.preventDefault();
+				if (filteredOptions.length > 0) {
 					focusedIndex = Math.min(filteredOptions.length - 1, focusedIndex + 1);
 					scrollToIndex = focusedIndex;
-					await tick();
-					scrollToIndex = null;
-				} else if (key === "Enter") {
-					selectedIndex = filteredOptions[focusedIndex].index;
-					filterOptions = false;
-					resetInput(selectedIndex);
-					focusedIndex = selectedIndex;
-					await tick();
-					inputElement.select();
-					scrollToIndex = selectedIndex;
-					await tick();
-					scrollToIndex = null;
-				} else {
-					return;
 				}
+			} else if (key === "Enter") {
 				event.preventDefault();
+				if (filteredOptions.length > 0) {
+					selectedIndex = filteredOptions[focusedIndex].index;
+					inputElement.blur();
+				}
 			}
 		}}
 	/>
@@ -138,53 +129,58 @@
 
 <div
 	id={listboxId}
-	class="card z-10 duration-0 [&>div]:my-4 [&>div]:px-4"
+	class="card z-10 duration-0"
 	style:width="{inputWidth}px"
 	role="listbox"
 	aria-label="{label} Options"
 	data-popup={popupTarget}
 	bind:this={listboxElement}
 >
-	{#if filteredOptions.length > 0}
-		<VirtualList
-			width="100%"
-			height={listHeight}
-			itemCount={filteredOptions.length * 2 - 1}
-			itemSize={itemHeights}
-			scrollToIndex={scrollToIndex === null ? undefined : scrollToIndex * 2}
-			scrollToAlignment="auto"
-		>
-			<svelte:fragment slot="item" let:index={filteredIndex} let:style>
-				{#if filteredIndex % 2 == 0}
-					<!-- svelte-ignore a11y-click-events-have-key-events -->
-					<div
-						id={optionId(filteredOptions[filteredIndex / 2].index)}
-						role="option"
-						aria-selected={selectedIndex === filteredOptions[filteredIndex / 2].index}
-						class={"cursor-pointer truncate px-4 py-2 rounded-token " +
-							optionClasses(filteredOptions[filteredIndex / 2].index, filteredIndex / 2)}
-						title={filteredOptions[filteredIndex / 2].label}
-						tabindex="-1"
-						{style}
-						on:mousemove={() => (focusedIndex = filteredIndex / 2)}
-						on:click={async () => {
-							selectedIndex = filteredOptions[filteredIndex / 2].index;
-							resetInput(selectedIndex);
-							filterOptions = false;
-							await tick();
-							inputElement.focus();
-						}}
-					>
-						{filteredOptions[filteredIndex / 2].label}
-					</div>
-				{/if}
-			</svelte:fragment>
-		</VirtualList>
-	{:else}
-		<div style="height:{listHeight}px;">
-			<div class="px-4 py-2">No results found</div>
-		</div>
-	{/if}
+	<div class="{popupExpanded ? '' : 'hidden '}[&>div]:my-4 [&>div]:px-4">
+		{#if filteredOptions.length > 0}
+			<VirtualList
+				width="100%"
+				height={listHeight}
+				itemCount={filteredOptions.length * 2 - 1}
+				itemSize={itemHeights}
+				scrollToIndex={scrollToIndex === null ? undefined : scrollToIndex * 2}
+				scrollToAlignment="auto"
+			>
+				<svelte:fragment slot="item" let:index={filteredIndex} let:style>
+					{#if filteredIndex % 2 == 0}
+						<!-- svelte-ignore a11y-click-events-have-key-events -->
+						<div
+							id={optionId(filteredOptions[filteredIndex / 2].index)}
+							role="option"
+							aria-selected={selectedIndex === filteredOptions[filteredIndex / 2].index}
+							class={"cursor-pointer truncate px-4 py-2 rounded-token " +
+								optionClasses(
+									filteredOptions[filteredIndex / 2].index,
+									filteredIndex / 2,
+								)}
+							title={filteredOptions[filteredIndex / 2].label}
+							tabindex="-1"
+							{style}
+							on:mousemove={() => (focusedIndex = filteredIndex / 2)}
+							on:click={() => {
+								console.log("CLICKED !!!");
+								selectedIndex = filteredOptions[filteredIndex / 2].index;
+								popupExpanded = false;
+								resetInput(selectedIndex);
+								scrollToIndex = null;
+							}}
+						>
+							{filteredOptions[filteredIndex / 2].label}
+						</div>
+					{/if}
+				</svelte:fragment>
+			</VirtualList>
+		{:else}
+			<div style="height:{listHeight}px;">
+				<div class="px-4 py-2">No results found</div>
+			</div>
+		{/if}
+	</div>
 </div>
 
 <input hidden {name} value={options[selectedIndex].value} />
